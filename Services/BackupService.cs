@@ -19,13 +19,17 @@ namespace FileMonitorTool.Services
         {
             if (!_config.AutoBackup || string.IsNullOrEmpty(_config.BackupFolder))
             {
-                Console.WriteLine($"[待备份·未启用自动备份] {sourcePath}");
+                LogService.Info($"[待备份·未启用自动备份] {sourcePath}");
                 return;
             }
+
+            // 最终防线：即使事件侧漏过滤，也不会复制被忽略的文件
+            if (_filter.IsIgnored(sourcePath)) return;
+
             var relative = Path.GetRelativePath(_config.WatchFolder, sourcePath);
             if (relative.StartsWith(".."))
             {
-                Console.WriteLine($"[跳过·越界路径] {sourcePath}");
+                LogService.Warn($"[跳过·越界路径] {sourcePath}");
                 return;
             }
             var destPath = Path.Combine(_config.BackupFolder, relative);
@@ -37,10 +41,11 @@ namespace FileMonitorTool.Services
                 return;
 
             File.Copy(sourcePath, destPath, overwrite: true);
-            Console.WriteLine($"[已备份] {sourcePath} -> {destPath}");
+            LogService.Info($"[已备份] {sourcePath} -> {destPath}");
         }
 
-        public int SnapBackup(bool isFull = false)
+        /// <summary>定时备份：只新增和修改，从不删除备份目录中的任何文件</summary>
+        public int SnapBackup()
         {
             if (!Directory.Exists(_config.WatchFolder)) return 0;
             var count = 0;
@@ -53,31 +58,8 @@ namespace FileMonitorTool.Services
                 BackupFile(file);
                 count++;
             }
-            int removed = isFull ? RemoveOrphans() : 0;
-            Console.WriteLine($"[定时·{(isFull ? "全量镜像" : "增量备份")}] 处理 {count} 个文件" + (isFull ? $"，清理冗余 {removed} 个" : ""));
+            LogService.Info($"[定时备份] 处理 {count} 个文件");
             return count;
-        }
-
-        private int RemoveOrphans()
-        {
-            int removed = 0;
-            if (!Directory.Exists(_config.BackupFolder)) return 0;
-            var searchOption = _config.IncludeSubDirectories
-                ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-
-            foreach (var file in Directory.EnumerateFiles(_config.BackupFolder, "*.*", searchOption))
-            {
-                var relative = Path.GetRelativePath(_config.BackupFolder, file);
-                if (relative.StartsWith("..")) continue;
-                var srcPath = Path.Combine(_config.WatchFolder, relative);
-                if (!File.Exists(srcPath) || _filter.IsIgnored(srcPath))
-                {
-                    File.Delete(file);
-                    removed++;
-                    Console.WriteLine($"[清理冗余] {file}");
-                }
-            }
-            return removed;
         }
     }
 }

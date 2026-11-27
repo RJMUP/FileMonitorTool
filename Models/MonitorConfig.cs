@@ -8,8 +8,8 @@ namespace FileMonitorTool.Models
         public string BackupFolder { get; set; } = @"C:\Data\Backup";
         public bool IncludeSubDirectories { get; set; } = true;
         public string Filter { get; set; } = "*.*";
-        public List<string> IgnoreRules { get; set; } = new()
-        { "\\.git", "\\.node_modules", ".*\\.tmp$", "^~\\$.*" };
+        // 忽略规则在 config.json 中维护（与 .gitignore 对齐），模型不设默认值
+        public List<string> IgnoreRules { get; set; } = new();
         public int WatchDebounceMs { get; set; } = 500;
         public int MaxQueueSize { get; set; } = 1000;
         public bool AutoBackup { get; set; } = true;
@@ -18,6 +18,12 @@ namespace FileMonitorTool.Models
         // ===== 定时备份配置 =====
         public bool EnableScheduledBackup { get; set; } = true;
         public int ScheduledIntervalMinutes { get; set; } = 30;
-        public bool FullMirrorOnScheduled { get; set; } = false;
+        // 执行时间段（HH:mm，如 "09:00"）；留空表示不限制，支持跨零点（如 22:00~06:00）
+        public string ScheduledStartTime { get; set; } = "";
+        public string ScheduledEndTime { get; set; } = "";
+
+        // ===== 日志配置 =====
+        public bool EnableFileLog { get; set; } = true;
+        public string LogFolder { get; set; } = "logs";
     }
 }

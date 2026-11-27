@@ -17,7 +17,7 @@ namespace FileMonitorTool.Services
             _watcher = new FileSystemWatcher
             {
                 Path = config.WatchFolder,
-                IncludeSubDirectories = config.IncludeSubDirectories,
+                IncludeSubdirectories = config.IncludeSubDirectories,
                 Filter = config.Filter ?? "*.*",
                 EnableRaisingEvents = true,
                 NotifyFilter = NotifyFilters.FileName
@@ -32,17 +32,14 @@ namespace FileMonitorTool.Services
         {
             _watcher.Created += OnChange;
             _watcher.Changed += OnChange;
-            _watcher.Renamed += (s, e) => _ = _queue.EnqueueAsync(e.FullPath);
-            _watcher.Deleted += (s, e) =>
-            {
-                if (!_filter.IsIgnored(e.FullPath))
-                    Console.WriteLine($"[文件删除] {e.FullPath}（如需同步删除，可扩展）");
-            };
-            Console.WriteLine($"监控已启动: {_watcher.Path}");
-            Console.WriteLine($"忽略规则数: {_filter.RuleCount}");
+            _watcher.Renamed += (s, e) => _ = _queue.EnqueueAsync(e.FullPath, e.ChangeType);
+            _watcher.Deleted += (s, e) => _ = _queue.EnqueueAsync(e.FullPath, WatcherChangeTypes.Deleted);
+            LogService.Info($"监控已启动: {_watcher.Path}");
+            LogService.Info($"忽略规则数: {_filter.RuleCount}");
         }
 
-        private void OnChange(object sender, FileSystemEventArgs e) => _ = _queue.EnqueueAsync(e.FullPath);
+        private void OnChange(object sender, FileSystemEventArgs e)
+            => _ = _queue.EnqueueAsync(e.FullPath, e.ChangeType);
         public void Stop() => _watcher?.Dispose();
     }
 }

@@ -1,14 +1,31 @@
 {
-  "WatchFolder": "C:\\Data\\Source",
-  "BackupFolder": "C:\\Data\\Backup",
+  "WatchFolder": "D:\\工作目录",
+  "BackupFolder": "D:\\工作目录备份",
   "IncludeSubDirectories": true,
   "Filter": "*.*",
-  "IgnoreRules": ["\\.git", "\\.node_modules", ".*\\.tmp$", "^~\\$.*"],
+  "IgnoreRules": [
+    "\\.git",
+    "\\.node_modules",
+    "^bin$",
+    "^obj$",
+    "^logs$",
+    "^publish$",
+    "^\\.vs$",
+    "^\\.vscode$",
+    "^\\.idea$",
+    ".*\\.user$",
+    ".*\\.suo$",
+    ".*\\.tmp$",
+    "^~\\$.*"
+  ],
   "WatchDebounceMs": 500,
   "MaxQueueSize": 1000,
   "AutoBackup": true,
   "LogIgnored": true,
   "EnableScheduledBackup": true,
   "ScheduledIntervalMinutes": 30,
-  "FullMirrorOnScheduled": false
+  "ScheduledStartTime": "",
+  "ScheduledEndTime": "",
+  "EnableFileLog": true,
+  "LogFolder": "logs"
 }
