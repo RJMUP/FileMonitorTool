@@ -13,14 +13,14 @@ namespace FileMonitorTool.Services
                 .MinimumLevel.Information()
                 .Enrich.WithProperty("Source", "FileMonitorTool")
                 .WriteTo.Console(
-                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
                 .WriteTo.File(
                     Path.Combine(string.IsNullOrEmpty(logDir) ? "logs" : logDir, "log-.log"),
                     rollingInterval: RollingInterval.Day,       // 按天滚动
                     rollOnFileSizeLimit: true,                   // 超过大小新建文件
                     fileSizeLimitBytes: maxFileSizeMB > 0 ? maxFileSizeMB * 1024L * 1024L : 10 * 1024L * 1024L,
                     retainedFileCountLimit: retainDays > 0 ? retainDays : 30,   // 自动清理超期日志
-                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
                 .CreateLogger();
         }
 
