@@ -16,7 +16,8 @@ namespace FileMonitorTool.Models
         public bool LogIgnored { get; set; } = true;
 
         // ===== 定时备份配置 =====
-        public bool EnableScheduledBackup { get; set; } = true;
+        // 默认关闭：仅实时备份监控到的变化；需要周期性全量对账时再开启
+        public bool EnableScheduledBackup { get; set; } = false;
         public int ScheduledIntervalMinutes { get; set; } = 30;
         // 执行时间段（HH:mm，如 "09:00"）；留空表示不限制，支持跨零点（如 22:00~06:00）
         public string ScheduledStartTime { get; set; } = "";

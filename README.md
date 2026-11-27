@@ -157,8 +157,8 @@ sc.exe delete FileMonitorTool   # 卸载
 
 ### 定时备份
 
-* EnableScheduledBackup: 是否启用定时备份
-* ScheduledIntervalMinutes: 间隔分钟数
+* EnableScheduledBackup: 是否启用定时备份（**默认 false**，即仅实时备份监控到的变化；需要周期性全量对账时改为 true）
+* ScheduledIntervalMinutes: 间隔分钟数（仅在定时备份启用时生效）
 * ScheduledStartTime / ScheduledEndTime: 仅在该时间段内执行，格式 HH:mm（如 "09:00" / "18:00"），支持跨零点（如 "22:00" / "06:00"）；两者留空表示全天执行
 
 ### 服务

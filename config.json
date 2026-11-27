@@ -22,7 +22,7 @@
   "MaxQueueSize": 1000,
   "AutoBackup": true,
   "LogIgnored": true,
-  "EnableScheduledBackup": true,
+  "EnableScheduledBackup": false,
   "ScheduledIntervalMinutes": 30,
   "ScheduledStartTime": "",
   "ScheduledEndTime": "",
