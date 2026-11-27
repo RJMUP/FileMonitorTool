@@ -67,9 +67,9 @@ namespace FileMonitorTool.Services
                 if (now - kv.Value > _debounce) _recent.TryRemove(kv.Key, out _);
         }
 
-        public async Task StartConsumerAsync()
+        public async Task StartConsumerAsync(CancellationToken token = default)
         {
-            await foreach (var item in _queue.Reader.ReadAllAsync())
+            await foreach (var item in _queue.Reader.ReadAllAsync(token))
             {
                 try
                 {

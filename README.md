@@ -1,13 +1,13 @@
 # FileMonitorTool
 
-一个 .NET 10 控制台工具：监控源目录文件变化，实时把"未被忽略规则命中"的文件复制到备份目录，
+一个 .NET 10 Windows 服务工具：监控源目录文件变化，实时把"未被忽略规则命中"的文件复制到备份目录，
 并支持定时（周期）备份与文件日志。备份目录只新增和修改，从不删除——源文件被删除或重命名后，
 备份中仍保留历史副本，可随时找回。
 
 ## 快速开始
 
 1. 编辑 config.json，设置 WatchFolder（源）与 BackupFolder（备份）
-2. 运行：dotnet run
+2. 发布并注册为 Windows 服务（见下方"安装步骤"），开机自动运行
 
 ## 主要功能
 
@@ -16,7 +16,7 @@
 * 去重防抖：相同文件在 WatchDebounceMs 窗口内只入队一次
 * 删除保留：源文件删除后，备份目录中的对应文件保留不动（历史副本可找回）
 * 定时备份：按周期执行增量备份（只新增和修改，不删除任何备份文件）
-* 文件日志：控制台输出 + 按 logs/yyyyMMdd.log 追加，可配置关闭
+* 日志插件：基于 Serilog，按天 + 按文件大小滚动，自动清理超期日志
 
 ## 使用教程
 
@@ -38,27 +38,25 @@
 
 > 注意：JSON 中 Windows 路径的反斜杠需要写成 `\\`。
 
-### 第 3 步：启动工具
+### 第 3 步：发布并注册为 Windows 服务
 
-```bash
-dotnet run
+以管理员身份运行 PowerShell：
+
+```powershell
+# 1. 编辑项目根目录的 config.json（发布时会自动复制到 publish 目录）
+# 2. 发布程序
+dotnet publish -c Release -r win-x64 --self-contained false -o publish
+
+# 3. 创建服务（开机自动启动）
+sc.exe create FileMonitorTool binPath= "\"D:\工作目录\2.ZlStudy\FileMonitorTool\publish\FileMonitorTool.exe\"" start= auto DisplayName= "File Monitor Backup Tool"
+
+# 4. 启动服务
+sc.exe start FileMonitorTool
 ```
-
-启动后可看到类似输出：
-
-```
-=== 本地文件监控 + 忽略过滤 + 去重备份 + 定时备份 ===
-监控目录 : D:\Work\Project
-备份目录 : E:\Backup\Project
-忽略规则 : \.git, \.node_modules, ^bin$, ...
-定时备份 : 启用，间隔 30 分钟，模式 增量，时段 全天
-```
-
-保持窗口运行即可，按 `Ctrl+C` 退出。
 
 ### 第 4 步：验证备份效果
 
-在源目录中新建或修改任意文件（如 `a.txt`），窗口会出现：
+在源目录中新建或修改任意文件（如 `a.txt`），查看日志 `logs\yyyyMMdd.log`：
 
 ```
 2026-11-27 10:00:00 [INFO ] [入队] D:\Work\Project\a.txt (Created) (待处理: 0)
@@ -121,55 +119,25 @@ dotnet run
 | 启动即提示 `[警告] 源目录不存在` | 检查 WatchFolder 路径是否正确 |
 | 文件改动频繁导致日志刷屏 | 正常现象，防抖（WatchDebounceMs）会自动合并短时间内的重复事件 |
 | 队列提示 `待处理` 数字持续增长 | 大批量复制文件所致，程序会按队列顺序自动消化；可调大 MaxQueueSize |
-| 修改 config.json 后不生效 | 需重启程序（`Ctrl+C` 后重新 `dotnet run`），配置只在启动时加载 |
+| 修改 config.json 后不生效 | 需重启服务（`sc.exe stop` 后 `sc.exe start`），配置只在启动时加载 |
 | 忽略规则不生效 | 规则是正则表达式，注意转义（如 `\.` 表示点号）；目录规则用 `^目录名$` 命中任意层级同名目录 |
 | 备份目录出现源目录已删除的文件 | 设计如此：备份目录只新增和修改、从不删除，删除的文件可作为历史副本找回 |
 
-## 开机启动 + 静默运行
+## Windows 服务管理
 
-程序支持 `--silent` 参数：启动后自动隐藏控制台窗口，并**强制写入文件日志**（即使 EnableFileLog=false），
-任何启动异常也会落盘到 `logs/yyyyMMdd.log`，适合无人值守运行。
-
-### 方式一（推荐）：计划任务，开机即启动（真静默，无窗口闪现）
-
-以管理员身份运行 PowerShell：
+* 服务停止/系统关机时优雅退出：停止监控、等待队列消费完成、取消定时任务
+* 日志始终写入 `logs/yyyyMMdd.log`，无人值守可追踪
 
 ```powershell
-# 1. 发布程序
-dotnet publish -c Release -r win-x64 --self-contained false -o publish
-
-# 2. 注册开机启动计划任务（SYSTEM 账户运行，不显示任何窗口）
-schtasks /Create /TN "FileMonitorTool" /SC ONSTART /RU SYSTEM `
-  /TR "\"D:\工作目录\2.ZlStudy\FileMonitorTool\publish\FileMonitorTool.exe\" --silent" /F
+sc.exe query  FileMonitorTool   # 查看状态
+sc.exe stop   FileMonitorTool   # 停止（修改 config.json 后也需重启服务）
+sc.exe start  FileMonitorTool   # 启动
+sc.exe delete FileMonitorTool   # 卸载
 ```
 
-> SYSTEM 账户运行时注意：访问的是系统级环境，映射的网络驱动器（如 Z:\）不可见，
-> 请使用 UNC 路径（如 `\\server\share`）或本地路径。
-
-管理任务：
-
-```powershell
-schtasks /Run    /TN "FileMonitorTool"   # 手动启动
-schtasks /End    /TN "FileMonitorTool"   # 手动停止
-schtasks /Delete /TN "FileMonitorTool" /F # 卸载
-```
-
-### 方式二：登录时启动（窗口会闪现一下后隐藏）
-
-```powershell
-schtasks /Create /TN "FileMonitorTool" /SC ONLOGON `
-  /TR "\"D:\工作目录\2.ZlStudy\FileMonitorTool\publish\FileMonitorTool.exe\" --silent" /F
-```
-
-适合需要访问当前用户资源的场景（如桌面目录），登录后窗口自动隐藏。
-
-### 方式三：手动测试静默运行
-
-```powershell
-dotnet run -- --silent
-```
-
-启动后窗口立即隐藏，只看得到 `logs/` 下的日志文件在增长。调试时可去掉 `--silent` 观察控制台输出。
+> 注意：`sc.exe` 的 `binPath=`、`start=` 等号后必须有空格；服务以 exe 所在目录为工作目录
+> 读取 `config.json`（发布时自动从项目根目录复制过去，直接改 publish 目录里的那份后重启服务即可）。
+> 服务以 SYSTEM 账户运行，映射的网络驱动器（如 Z:\）不可见，请使用本地路径或 UNC 路径。
 
 ## 配置说明
 
@@ -192,8 +160,11 @@ dotnet run -- --silent
 
 ### 日志
 
-* EnableFileLog: 是否写入文件日志
-* LogFolder: 日志目录（按天分文件）
+* LogFolder: 日志目录
+* LogRetainDays: 日志保留天数，超过自动删除（默认 30）
+* LogMaxFileSizeMB: 单个日志文件大小上限（MB），超过后新建文件滚动写入（默认 10）
+* 日志文件命名：`log-yyyyMMdd.log`（按天）；超过大小后追加序号（如 `log-20261127_001.log`）
+* 说明：保留天数按滚动文件数量清理，单日内频繁滚动会产生多个文件，实际保留时间可能短于配置值
 
 ## 文件结构
 
@@ -217,7 +188,7 @@ FileMonitorTool/
 
     ├── FileFilterService.cs      # 忽略规则过滤
 
-    ├── LogService.cs             # 控制台 + 文件日志
+    ├── LogService.cs             # 日志门面（Serilog：滚动文件+控制台+自动清理）
 
     ├── BackupService.cs          # 核心备份逻辑（实时+定时复用，只增改不删）
 
@@ -225,4 +196,6 @@ FileMonitorTool/
 
     ├── FileWatcherService.cs     # 文件监控
 
-    └── ScheduledBackupService.cs # 定时备份服务
+    ├── FileMonitorWorker.cs      # 托管服务：监控+队列消费者，随服务生命周期启停
+
+    └── ScheduledBackupService.cs # 定时备份服务（BackgroundService）

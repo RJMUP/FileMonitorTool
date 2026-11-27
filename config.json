@@ -26,6 +26,7 @@
   "ScheduledIntervalMinutes": 30,
   "ScheduledStartTime": "",
   "ScheduledEndTime": "",
-  "EnableFileLog": true,
-  "LogFolder": "logs"
+  "LogFolder": "logs",
+  "LogRetainDays": 30,
+  "LogMaxFileSizeMB": 10
 }

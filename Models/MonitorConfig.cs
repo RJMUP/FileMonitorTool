@@ -23,7 +23,10 @@ namespace FileMonitorTool.Models
         public string ScheduledEndTime { get; set; } = "";
 
         // ===== 日志配置 =====
-        public bool EnableFileLog { get; set; } = true;
         public string LogFolder { get; set; } = "logs";
+        // 日志保留天数：超过自动删除
+        public int LogRetainDays { get; set; } = 30;
+        // 单个日志文件大小上限（MB）：超过后新建文件滚动写入
+        public int LogMaxFileSizeMB { get; set; } = 10;
     }
 }

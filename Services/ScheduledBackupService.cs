@@ -2,14 +2,15 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FileMonitorTool.Models;
+using Microsoft.Extensions.Hosting;
 
 namespace FileMonitorTool.Services
 {
-    public class ScheduledBackupService
+    /// <summary>定时备份服务：随 Windows 服务生命周期自动启停</summary>
+    public class ScheduledBackupService : BackgroundService
     {
         private readonly MonitorConfig _config;
         private readonly BackupService _backup;
-        private CancellationTokenSource? _cts;
 
         public ScheduledBackupService(MonitorConfig config, BackupService backup, FileFilterService filter)
         {
@@ -17,13 +18,7 @@ namespace FileMonitorTool.Services
             _backup = backup;
         }
 
-        public Task StartAsync()
-        {
-            _cts = new CancellationTokenSource();
-            return Task.Run(() => LoopAsync(_cts.Token));
-        }
-
-        private async Task LoopAsync(CancellationToken token)
+        protected override async Task ExecuteAsync(CancellationToken token)
         {
             if (!_config.EnableScheduledBackup)
             {
@@ -41,8 +36,8 @@ namespace FileMonitorTool.Services
             var outOfWindow = false;
             while (!token.IsCancellationRequested)
             {
-                await Task.Delay(interval, token);
-                if (token.IsCancellationRequested) break;
+                try { await Task.Delay(interval, token); }
+                catch (OperationCanceledException) { break; }
 
                 if (hasWindow && !InWindow(DateTime.Now.TimeOfDay, windowStart, windowEnd))
                 {
@@ -64,6 +59,7 @@ namespace FileMonitorTool.Services
                 }
                 catch (Exception ex) { LogService.Error($"[定时备份] 出错: {ex.Message}"); }
             }
+            LogService.Info("[定时备份] 已停止");
         }
 
         /// <summary>解析 HH:mm 格式时间</summary>
@@ -73,7 +69,5 @@ namespace FileMonitorTool.Services
         /// <summary>判断当前时刻是否在时间段内（支持跨零点）</summary>
         private static bool InWindow(TimeSpan now, TimeSpan start, TimeSpan end)
             => start <= end ? now >= start && now <= end : now >= start || now <= end;
-
-        public void Stop() => _cts?.Cancel();
     }
 }
