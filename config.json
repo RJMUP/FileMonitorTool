@@ -1,0 +1,14 @@
+{
+  "WatchFolder": "C:\\Data\\Source",
+  "BackupFolder": "C:\\Data\\Backup",
+  "IncludeSubDirectories": true,
+  "Filter": "*.*",
+  "IgnoreRules": ["\\.git", "\\.node_modules", ".*\\.tmp$", "^~\\$.*"],
+  "WatchDebounceMs": 500,
+  "MaxQueueSize": 1000,
+  "AutoBackup": true,
+  "LogIgnored": true,
+  "EnableScheduledBackup": true,
+  "ScheduledIntervalMinutes": 30,
+  "FullMirrorOnScheduled": false
+}
