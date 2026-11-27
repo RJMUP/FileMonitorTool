@@ -48,7 +48,7 @@
 dotnet publish -c Release -r win-x64 --self-contained false -o publish
 
 # 3. 创建服务（开机自动启动）
-sc.exe create FileMonitorTool binPath= "\"D:\工作目录\2.ZlStudy\FileMonitorTool\publish\FileMonitorTool.exe\"" start= auto DisplayName= "File Monitor Backup Tool"
+sc.exe create FileMonitorTool binPath= "\"D:\Apps\FileMonitorTool\publish\FileMonitorTool.exe\"" start= auto DisplayName= "File Monitor Backup Tool"
 
 # 4. 启动服务
 sc.exe start FileMonitorTool
