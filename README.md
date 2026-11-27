@@ -50,7 +50,10 @@ dotnet publish -c Release -r win-x64 --self-contained false -o publish
 # 3. 创建服务（开机自动启动）
 sc.exe create FileMonitorTool binPath= "\"D:\Apps\FileMonitorTool\publish\FileMonitorTool.exe\"" start= auto DisplayName= "File Monitor Backup Tool"
 
-# 4. 启动服务
+# 4. 设置服务描述（services.msc 的"描述"列显示）
+sc.exe description FileMonitorTool "监控源目录文件变化并实时备份（备份目录只新增和修改，从不删除），支持定时备份与日志自动清理。"
+
+# 5. 启动服务
 sc.exe start FileMonitorTool
 ```
 
@@ -157,6 +160,11 @@ sc.exe delete FileMonitorTool   # 卸载
 * EnableScheduledBackup: 是否启用定时备份
 * ScheduledIntervalMinutes: 间隔分钟数
 * ScheduledStartTime / ScheduledEndTime: 仅在该时间段内执行，格式 HH:mm（如 "09:00" / "18:00"），支持跨零点（如 "22:00" / "06:00"）；两者留空表示全天执行
+
+### 服务
+
+* 服务描述在安装时通过 `sc.exe description` 命令设置（见安装步骤第 4 步），程序内不包含该逻辑；
+  随时可用 `sc.exe description FileMonitorTool "新描述"` 修改，立即生效、无需重启
 
 ### 日志
 
